@@ -15,9 +15,17 @@ const { redact } = require('./redact');
 const RUNTIME_DIR = path.join(os.tmpdir(), 'retro-bot-lab-runtime');
 fs.mkdirSync(RUNTIME_DIR, { recursive: true });
 
+// Ricerca di un eseguibile nel PATH senza dipendere dal comando "which" (assente su Termux minimale e Windows)
 function which(cmd) {
-  const r = spawnSync(process.platform === 'win32' ? 'where' : 'which', [cmd], { encoding: 'utf8' });
-  return r.status === 0 ? r.stdout.split('\n')[0].trim() : null;
+  const exts = process.platform === 'win32' ? (process.env.PATHEXT || '.EXE;.CMD;.BAT').split(';') : [''];
+  for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+    if (!dir) continue;
+    for (const ext of exts) {
+      const f = path.join(dir, cmd + ext);
+      try { fs.accessSync(f, fs.constants.X_OK); if (fs.statSync(f).isFile()) return f; } catch { /* non presente */ }
+    }
+  }
+  return null;
 }
 
 const TOOLS = {

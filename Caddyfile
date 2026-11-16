@@ -1,0 +1,5 @@
+# Caddy ottiene e rinnova automaticamente il certificato HTTPS (Let's Encrypt) per {$DOMAIN}
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:8080
+}

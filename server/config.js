@@ -21,7 +21,10 @@ loadDotEnv(path.join(ROOT, '.env'));
 const env = process.env;
 const config = {
   ROOT,
-  HOST: env.HOST || '127.0.0.1',
+  // --lan: accetta connessioni dagli altri dispositivi della rete locale (telefono, tablet)
+  HOST: process.argv.includes('--lan') ? '0.0.0.0' : env.HOST || '127.0.0.1',
+  // on: accetta anche connessioni da indirizzi pubblici (solo dietro reverse proxy HTTPS o firewall)
+  ALLOW_PUBLIC: (env.ALLOW_PUBLIC || 'off').toLowerCase() === 'on',
   PORT: Number(env.PORT || 8080),
   DATA_DIR: path.resolve(ROOT, env.DATA_DIR || 'data'),
   PUBLIC_DIR: path.join(ROOT, 'public'),

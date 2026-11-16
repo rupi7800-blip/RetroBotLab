@@ -602,9 +602,40 @@ const SECURITY_HEADERS = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 
+// ---------- accesso dalla rete locale ----------
+const os = require('node:os');
+function isPrivateAddress(ip) {
+  const a = String(ip || '').replace(/^::ffff:/, '');
+  return a === '::1' || a === '127.0.0.1' || /^127\./.test(a) || /^10\./.test(a) || /^192\.168\./.test(a) || /^172\.(1[6-9]|2\d|3[01])\./.test(a)
+    || /^169\.254\./.test(a) || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a) || /^f[cd][0-9a-f]{2}:/i.test(a) || /^fe80:/i.test(a);
+}
+function lanAddresses() {
+  const out = [];
+  for (const [name, list] of Object.entries(os.networkInterfaces())) {
+    for (const i of list || []) if (i.family === 'IPv4' && !i.internal) out.push({ name, address: i.address });
+  }
+  return out;
+}
+const listensOnAll = () => config.HOST === '0.0.0.0' || config.HOST === '::';
+
+r.get('/api/system/access', (req) => {
+  const lan = listensOnAll() ? lanAddresses().map((a) => ({ ...a, url: `http://${a.address}:${config.PORT}` })) : [];
+  return {
+    host: config.HOST, port: config.PORT, lanEnabled: listensOnAll(), lan, publicUrl: config.PUBLIC_URL || null,
+    allowPublic: config.ALLOW_PUBLIC, secure: req.headers['x-forwarded-proto'] === 'https' || !!req.socket.encrypted,
+    client: String(req.socket.remoteAddress || '').replace(/^::ffff:/, ''),
+  };
+});
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
+  // in modalità rete locale si accettano solo dispositivi della rete privata (salvo ALLOW_PUBLIC=on)
+  if (!config.ALLOW_PUBLIC && !isPrivateAddress(req.socket.remoteAddress)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Accesso consentito solo dalla rete locale. Per l\'accesso da Internet usa un reverse proxy HTTPS e imposta ALLOW_PUBLIC=on.');
+    return;
+  }
   try {
     if (pathname.startsWith('/mock/')) { if (await mock.route(req, res, pathname)) return; }
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
@@ -627,9 +658,17 @@ server.headersTimeout = 60000;
 
 if (require.main === module) {
   server.listen(config.PORT, config.HOST, () => {
-    console.log(`\n  ▓▓ RETRO BOT LAB ▓▓  http://${config.HOST}:${config.PORT}\n`);
+    console.log(`\n  ▓▓ RETRO BOT LAB ▓▓  http://${listensOnAll() ? '127.0.0.1' : config.HOST}:${config.PORT}\n`);
+    if (config.PUBLIC_URL) console.log(`  Indirizzo pubblico: ${config.PUBLIC_URL}\n`);
+    else if (listensOnAll()) {
+      const lan = lanAddresses();
+      console.log('  Accesso dal telefono (stessa rete Wi-Fi):');
+      for (const a of lan) console.log(`    http://${a.address}:${config.PORT}   (${a.name})`);
+      if (!lan.length) console.log('    nessuna rete locale rilevata');
+      console.log('  Il QR code da inquadrare è nella schermata "Usa sul telefono".');
+      console.log('  Attenzione: in rete locale la connessione non è cifrata (HTTP): usa solo reti di cui ti fidi.\n');
+    }
     if (!config.APP_SECRET) console.log('  Nota: APP_SECRET non impostato, la chiave di cifratura è in data/.master.key');
-    if (config.HOST === '0.0.0.0') console.log('  Attenzione: server esposto su tutte le interfacce. Usa HTTPS tramite reverse proxy.');
     updater.schedule(config.KNOWLEDGE_UPDATE_HOURS);
     const k = store.db().knowledge;
     const stale = !k.lastCheck || Date.now() - new Date(k.lastCheck).getTime() > config.KNOWLEDGE_UPDATE_HOURS * 3600_000;
@@ -639,4 +678,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, router: r };
+module.exports = { server, router: r, isPrivateAddress };

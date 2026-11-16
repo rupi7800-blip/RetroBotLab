@@ -50,6 +50,25 @@ Per PHP, Java, C#, Go, python-telegram-bot, Telegraf il codice viene prodotto da
 
 **Collaudo eseguito sul generatore:** tutte le 90 combinazioni (15 modelli × 3 linguaggi × 2 modalità) superano pyflakes, `node --check` e `tsc --noEmit`; un progetto con tutte le 13 funzionalità attive è stato eseguito in Python, JavaScript e TypeScript contro il simulatore superando 35 verifiche funzionali ciascuno (comandi, menu, prenotazioni, attività, moduli ed esportazione CSV, catalogo e ordini, broadcast, API esterne, moderazione gruppi, ricezione file) senza errori Bot API.
 
+## Uso da telefono
+
+L'interfaccia è pensata anche per lo smartphone (barra di navigazione in basso, comandi adatti al dito, editor e simulatore adattati) e si può **installare come app** (PWA). La schermata **"Usa sul telefono"** guida passo passo.
+
+| Modo | Per chi | Come |
+|---|---|---|
+| **Rete Wi-Fi di casa** | Android e iPhone, con un computer acceso | Avvia con `npm run lan`, apri "Usa sul telefono" sul computer e inquadra il QR code col telefono |
+| **Tutto sul telefono** | Solo Android | Termux (da F-Droid): `pkg install nodejs-lts git python`, poi `git clone` del repository e `npm start`; apri `http://127.0.0.1:8080` in Chrome |
+| **Server online HTTPS** | Ovunque, anche iPhone fuori casa | VPS con Docker: imposta `DOMAIN` e `APP_SECRET` in `.env`, poi `docker compose up -d` (Caddy ottiene il certificato HTTPS automaticamente) |
+
+Installazione dell'app: su iPhone Safari → Condividi → "Aggiungi alla schermata Home"; su Android Chrome → ⋮ → "Installa app".
+
+Sicurezza:
+- con `npm run lan` il server accetta **solo dispositivi della rete privata** (192.168.x.x, 10.x.x.x, 172.16-31.x.x, hotspot): gli altri ricevono 403. `ALLOW_PUBLIC=on` disattiva il controllo (solo dietro proxy o firewall);
+- in rete locale la connessione è HTTP non cifrata: usala su reti fidate. Per l'accesso da Internet usa sempre il server HTTPS;
+- il service worker mette in cache solo l'interfaccia, mai i dati (`/api`) né il simulatore.
+
+Su Termux il sandbox funziona senza limiti di risorse e senza isolamento delle cartelle (strumenti non disponibili su Android).
+
 ## Intelligenza artificiale
 
 Architettura modulare, nessun vincolo a un singolo fornitore:
@@ -123,7 +142,7 @@ Separazione: interfaccia (`public/`), logica applicativa (`server/index.js`), mo
 
 ## Pubblicazione dell'applicazione
 
-Per l'uso su un server:
+Con Docker: `docker compose up -d` (vedi "Uso da telefono"). In alternativa, manualmente:
 
 1. imposta `APP_SECRET`, lascia `HOST=127.0.0.1`;
 2. metti davanti un reverse proxy HTTPS (es. Caddy: `retrobotlab.example.com { reverse_proxy 127.0.0.1:8080 }`);

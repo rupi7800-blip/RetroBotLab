@@ -11,6 +11,7 @@ const TILES = [
   { href: '#/knowledge', ico: '◈', title: 'Documentazione e risorse', desc: 'Fonti ufficiali, librerie, ricerca su GitHub e Stack Overflow.' },
   { href: '#/learn', ico: '✎', title: 'Formazione', desc: 'Percorso in 4 livelli, dal primo bot ai sistemi professionali.' },
   { href: '#/guide', ico: '☰', title: 'Guida BotFather', desc: 'Crea il bot, ottieni il token e collegalo, passo dopo passo.' },
+  { href: '#/mobile', ico: '▯', title: 'Usa sul telefono', desc: 'QR code per la rete Wi-Fi, installazione come app, Android con Termux.' },
   { href: '#/settings', ico: '⚙', title: 'Impostazioni', desc: 'Fornitori AI, sicurezza, backup, aggiornamenti.' },
 ];
 

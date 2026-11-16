@@ -18,7 +18,7 @@ const NAV = [
     { path: 'learn', ico: '✎', label: 'Formazione' },
     { path: 'guide', ico: '☰', label: 'Guida BotFather' },
   ] },
-  { group: 'Sistema', items: [{ path: 'settings', ico: '⚙', label: 'Impostazioni' }] },
+  { group: 'Sistema', items: [{ path: 'mobile', ico: '▯', label: 'Usa sul telefono' }, { path: 'settings', ico: '⚙', label: 'Impostazioni' }] },
 ];
 
 const VIEWS = {
@@ -34,6 +34,7 @@ const VIEWS = {
   learn: () => import('./views/learn.js'),
   guide: () => import('./views/guide.js'),
   settings: () => import('./views/settings.js'),
+  mobile: () => import('./views/mobile.js'),
 };
 
 export const app = { settings: null, cleanup: null, main: null, refreshStatus: () => {} };
@@ -46,7 +47,17 @@ function setMode(mode) {
 
 async function boot() {
   let st;
-  try { st = await GET('/api/auth/status'); } catch (e) { clear(document.getElementById('root'), h('div.login-wrap', h('div.panel.danger', 'Server non raggiungibile: ' + e.message))); return; }
+  try { st = await GET('/api/auth/status'); } catch (e) {
+    // server non raggiungibile (es. telefono fuori dalla rete Wi-Fi, server spento): nuovo tentativo automatico
+    clear(document.getElementById('root'), h('div.login-wrap', h('div.login', h('div.panel.danger',
+      h('h2', 'Server non raggiungibile'),
+      h('p', 'Controlla che il server RETRO BOT LAB sia acceso e che questo dispositivo sia connesso alla stessa rete (o a Internet, per un server online).'),
+      h('p.dim', { style: { fontSize: '0.85rem' } }, `Dettaglio: ${e.message} · nuovo tentativo automatico ogni 5 secondi`),
+      h('button.btn.primary', { onclick: () => location.reload() }, '⟳ Riprova ora')))));
+    setTimeout(() => location.reload(), 5000);
+    window.addEventListener('online', () => location.reload(), { once: true });
+    return;
+  }
   if (!st.authenticated) return loginScreen(st.configured);
   try { app.settings = await GET('/api/settings'); } catch (e) { toastErr(e); return; }
   shell();
@@ -121,7 +132,13 @@ function shell() {
     h('div.spacer'), leds, modeBtn,
     h('button.btn.small.ghost', { title: 'Esci', onclick: async () => { await POST('/api/auth/logout'); location.reload(); } }, '⏻'));
   app.main = h('main#main', { tabindex: '-1' });
-  clear(document.getElementById('root'), h('div.app', top, sidebar, app.main));
+  // barra di navigazione in basso (solo schermi piccoli)
+  const BOTTOM = [['', '⌂', 'Home'], ['projects', '▤', 'Progetti'], ['assistant', '◉', 'AI'], ['test', '▶', 'Test']];
+  const bottom = h('nav.bottom-nav', { 'aria-label': 'Navigazione rapida' },
+    BOTTOM.map(([path, ico, label]) => h('a', { href: '#/' + path, 'data-path': path }, h('span.ico', ico), h('span', label))),
+    h('button', { type: 'button', onclick: () => sidebar.classList.toggle('open') }, h('span.ico', '☰'), h('span', 'Menu')));
+  const backdrop = h('div.backdrop', { onclick: () => sidebar.classList.remove('open') });
+  clear(document.getElementById('root'), h('div.app', top, sidebar, backdrop, app.main, bottom));
   app.refreshStatus = refreshStatus;
   refreshStatus();
   setInterval(refreshStatus, 60000);
@@ -144,7 +161,7 @@ async function route() {
   if (hash === 'login') return boot();
   const [name, ...params] = hash.split('/');
   const loader = VIEWS[name] || VIEWS[''];
-  document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.path === (name === 'project' ? 'projects' : name)));
+  document.querySelectorAll('.nav a, .bottom-nav a').forEach((a) => a.classList.toggle('active', a.dataset.path === (name === 'project' ? 'projects' : name)));
   document.getElementById('sidebar')?.classList.remove('open');
   if (typeof app.cleanup === 'function') { try { app.cleanup(); } catch { /* ignorato */ } }
   app.cleanup = null;
@@ -163,6 +180,27 @@ async function route() {
 
 export function viewHead(title, desc, ...actions) {
   return h('div.view-head', h('div', h('h1', title), desc ? h('p', desc) : null), actions.length ? h('div.row', ...actions) : null);
+}
+
+// ---------- app installabile (PWA) ----------
+// Il service worker funziona solo in contesto sicuro (HTTPS o localhost); in rete locale HTTP
+// si può comunque aggiungere l'app alla schermata Home dal menu del browser.
+export const pwa = { prompt: null, installed: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true };
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('/sw.js').catch((e) => console.warn('Service worker non registrato:', e.message));
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  pwa.prompt = e;
+  document.querySelectorAll('[data-install]').forEach((b) => b.classList.remove('hidden'));
+});
+window.addEventListener('appinstalled', () => { pwa.installed = true; pwa.prompt = null; toast('App installata'); });
+export async function installApp() {
+  if (!pwa.prompt) return false;
+  pwa.prompt.prompt();
+  const r = await pwa.prompt.userChoice;
+  pwa.prompt = null;
+  return r.outcome === 'accepted';
 }
 
 boot();
