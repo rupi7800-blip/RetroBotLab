@@ -274,23 +274,71 @@ body:not(.simple) .simple-only { display: none !important; }
 @media (max-width: 1100px) {
   .grid.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* elementi visibili solo su schermi piccoli */
+.bottom-nav, .backdrop, .mobile-only { display: none; }
+a { overflow-wrap: anywhere; }
+
 @media (max-width: 860px) {
   .app { grid-template-columns: 1fr; }
+  .topbar { padding-top: max(8px, env(safe-area-inset-top)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .menu-toggle { display: inline-flex; }
-  .sidebar { position: fixed; inset: 49px 0 0 0; height: auto; z-index: 40; transform: translateX(-100%); transition: transform 0.18s; width: min(300px, 86vw); }
+  .sidebar { position: fixed; top: 0; bottom: 0; left: 0; height: auto; z-index: 60; transform: translateX(-105%); transition: transform 0.18s; width: min(300px, 86vw);
+    padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
   .sidebar.open { transform: none; box-shadow: 8px 0 30px rgba(0, 0, 0, 0.6); }
-  main { padding: 16px 16px 60px; }
+  .sidebar.open + .backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 55; }
+  main { padding: 16px max(16px, env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .grid.cols-2, .grid.cols-3, .split { grid-template-columns: minmax(0, 1fr); }
   .leds .led-label { display: none; }
   .finding dl { grid-template-columns: 1fr; }
   .finding dt { margin-top: 6px; }
   .msg.user { margin-left: 0; }
-  .editor { height: 55vh; }
   .topbar .brand-text { display: none; }
+  .mobile-only { display: block; }
+  .desktop-only { display: none !important; }
+
+  /* barra di navigazione in basso */
+  .bottom-nav {
+    display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: var(--bg-2); border-top: 1px solid var(--line-2); padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  }
+  .bottom-nav a, .bottom-nav button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; background: none; border: 0;
+    color: var(--text-dim); text-decoration: none; font: 600 11px var(--mono); border-radius: var(--radius); cursor: pointer;
+  }
+  .bottom-nav .ico { font-size: 19px; line-height: 1; }
+  .bottom-nav a.active { color: var(--green); background: var(--green-soft); }
+  .toasts { bottom: calc(76px + env(safe-area-inset-bottom)); left: 16px; right: 16px; max-width: none; }
+
+  /* comandi adatti al dito (minimo ~44px) */
+  .btn { min-height: 44px; padding: 8px 14px; white-space: normal; text-align: left; line-height: 1.25; }
+  .btn.small { min-height: 38px; padding: 6px 11px; }
+  .tabs button { min-height: 44px; }
+  .filetree button { min-height: 44px; }
+  label.inline { min-height: 40px; }
+  input[type=checkbox], input[type=radio] { width: 20px; height: 20px; }
+  /* 16px evita lo zoom automatico di iOS quando si tocca un campo */
+  input[type=text], input[type=password], input[type=number], input[type=time], input[type=search], input[type=url], select, textarea { font-size: 16px; min-height: 44px; }
+  .editor { height: 60vh; height: 60dvh; }
+  .editor pre, .editor textarea, .editor .gutter { font-size: 14px; }
+  .phone { height: calc(100vh - 160px); height: calc(100dvh - 160px - env(safe-area-inset-bottom)); min-height: 380px; scroll-margin-top: 60px; }
+  .brand .cursor { display: none; }
+  .modal { padding: 16px; }
+  .modal .actions .btn { flex: 1; justify-content: center; }
+  .view-head { margin-bottom: 12px; }
+  h1 { font-size: 1.3rem; }
+  .test-grid > .phone-col { order: -1; }
+}
+@media (max-width: 860px) and (hover: none) {
+  /* su dispositivi touch l'editor usa 16px per evitare lo zoom di iOS */
+  .editor pre, .editor textarea, .editor .gutter { font-size: 16px; }
 }
 @media (max-width: 520px) {
-  .topbar { gap: 8px; padding: 8px 10px; }
+  .topbar { gap: 8px; }
   .topbar .search { min-width: 0; }
   .leds, #mode-btn { display: none; }
   .bubble { max-width: 92%; }
+  .panel { padding: 13px; }
+}
+@media (display-mode: standalone) {
+  .install-hint { display: none !important; }
 }

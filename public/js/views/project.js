@@ -54,7 +54,10 @@ export async function render(main, params) {
     if (!current) current = storage.get('projFile:' + id, null);
     if (!current || p.files[current] === undefined) current = names.find((n) => /^(main\.py|bot\.js|src\/bot\.ts)$/.test(n)) || names[0] || null;
     const tree = h('div.filetree', names.map((n) => h('button', { class: n === current ? 'active' : '', title: n, onclick: () => { editor?.flush(); current = n; drawCode(); } }, n)));
-    const treeBox = h('div', tree, h('div.row', { style: { marginTop: '8px' } },
+    tree.classList.add('desktop-only');
+    const fileSel = h('select.mobile-only', { 'aria-label': 'File da modificare' }, names.map((n) => h('option', { value: n, selected: n === current }, n)));
+    fileSel.addEventListener('change', () => { editor?.flush(); current = fileSel.value; drawCode(); });
+    const treeBox = h('div', tree, fileSel, h('div.row', { style: { marginTop: '8px' } },
       h('button.btn.small', { onclick: newFile }, '+ File'),
       current ? h('button.btn.small', { onclick: renameFile }, 'Rinomina') : null,
       current ? h('button.btn.small.danger', { onclick: deleteFile }, 'Elimina') : null));

@@ -124,3 +124,15 @@ test('simulatore: messaggi, comandi con entity, pulsanti, validazioni', async ()
   assert.ok(mock.checkHtml('<b>aperto'));
   mock.deleteSession(s.id);
 });
+
+test('rete locale: solo indirizzi privati sono ammessi', () => {
+  const { isPrivateAddress } = require('../server/index.js');
+  for (const ip of ['127.0.0.1', '::1', '::ffff:192.168.1.20', '10.1.2.3', '172.20.10.2', '100.72.1.1', 'fe80::1']) assert.ok(isPrivateAddress(ip), ip);
+  for (const ip of ['8.8.8.8', '::ffff:93.184.216.34', '172.32.0.1', '2001:4860::8888']) assert.ok(!isPrivateAddress(ip), ip);
+});
+
+test('QR code: dimensioni corrette per la versione', async () => {
+  const { qrMatrix } = await import('../public/js/qr.js');
+  assert.equal(qrMatrix('http://192.168.1.20:8080').length, 25); // 24 byte: versione 2 (25×25)
+  assert.throws(() => qrMatrix('x'.repeat(200)));
+});

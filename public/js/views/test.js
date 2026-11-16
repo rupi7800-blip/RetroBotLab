@@ -33,10 +33,14 @@ export async function render(main, params) {
       h('button.btn.small.adv', { onclick: joinGroup, title: 'Simula l\'ingresso di un nuovo membro nel gruppo' }, '+ Membro'), fileIn));
   const apiLog = h('div.log', { style: { maxHeight: '300px' } });
   const runLog = h('div.log', { style: { maxHeight: '300px' } });
-  const right = h('div',
+  const right = h('div.phone-col',
     phone,
     h('div.panel.adv', { style: { marginTop: '14px' } }, h('div.panel-title', 'Registro chiamate Bot API', h('button.btn.small', { onclick: () => clear(apiLog) }, 'Pulisci')), apiLog));
-  main.append(h('div.grid.cols-2', left, right));
+  main.append(h('div.grid.cols-2.test-grid', left, right));
+  async function quickSession() {
+    const r = await POST('/api/sim/sessions', {});
+    sid = r.session.id; storage.set('simSession', sid); resetFeed(); await drawLeft(); toast('Sessione creata');
+  }
 
   function setChat(t) {
     chatType = t;
@@ -52,7 +56,7 @@ export async function render(main, params) {
     const s = sessions.sessions.find((x) => x.id === sid);
     const sessSel = h('select', sessions.sessions.length ? sessions.sessions.map((x) => h('option', { value: x.id, selected: x.id === sid }, `${x.bot.first_name} (@${x.bot.username}) · ${fmtDate(x.createdAt)}`)) : h('option', { value: '' }, 'Nessuna sessione'));
     sessSel.addEventListener('change', () => { sid = sessSel.value; storage.set('simSession', sid); resetFeed(); drawLeft(); });
-    const newBtn = h('button.btn.primary', { onclick: () => run(newBtn, async () => { const r = await POST('/api/sim/sessions', {}); sid = r.session.id; storage.set('simSession', sid); resetFeed(); drawLeft(); toast('Sessione creata'); }) }, '+ Nuova sessione');
+    const newBtn = h('button.btn.primary', { onclick: () => run(newBtn, quickSession) }, '+ Nuova sessione');
     const blocks = [h('div.panel', h('div.panel-title', 'Sessione di simulazione'), h('div.row', sessSel, newBtn),
       s ? h('button.btn.small.danger', { style: { marginTop: '8px' }, onclick: async () => { if (await confirmBox('Chiudere la sessione?', 'Messaggi e file simulati verranno eliminati.', 'Chiudi', true)) { await DEL('/api/sim/sessions/' + sid); sid = ''; resetFeed(); drawLeft(); } } }, 'Chiudi sessione') : null)];
     if (s) {
@@ -95,7 +99,11 @@ export async function render(main, params) {
     clear(status, h('span.led', { class: s?.connected ? 'on' : 'warn' }), s ? (s.connected ? 'bot collegato' : 'in attesa del bot…') : 'nessuna sessione', s?.webhook?.url ? ` · webhook ${s.webhook.url}` : '');
   }
 
-  function resetFeed() { since = 0; bubbles.clear(); clear(phoneBody); clear(apiLog); }
+  function resetFeed() {
+    since = 0; bubbles.clear(); clear(phoneBody); clear(apiLog);
+    if (!sid) phoneBody.append(h('div.bubble.sys', { style: { marginTop: '30%' } }, 'Nessuna sessione attiva.', h('br'), h('br'),
+      h('button.btn.primary', { onclick: (e) => run(e.currentTarget, quickSession) }, '+ Crea sessione di simulazione')));
+  }
 
   // ---------------- feed eventi ----------------
   function addBubble(ev) {
@@ -181,6 +189,7 @@ export async function render(main, params) {
   }
 
   setChat('private');
+  resetFeed();
   await drawLeft();
   poll();
   return () => clearTimeout(timer);

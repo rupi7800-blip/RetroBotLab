@@ -1,0 +1,32 @@
+# Avvio: imposta DOMAIN e APP_SECRET nel file .env, poi `docker compose up -d`.
+# Il dominio deve puntare all'indirizzo IP del server e le porte 80/443 devono essere aperte.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /app/data
+      PUBLIC_URL: https://${DOMAIN}
+    volumes:
+      - retrobotlab-data:/app/data
+    expose:
+      - "8080"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+volumes:
+  retrobotlab-data:
+  caddy-data:
+  caddy-config:
