@@ -1,0 +1,16 @@
+{
+  "name": "retro-bot-lab",
+  "version": "1.0.0",
+  "description": "RETRO BOT LAB — piattaforma per progettare, generare, verificare e correggere bot Telegram",
+  "main": "server/index.js",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test test/*.test.js"
+  }
+}
