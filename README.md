@@ -57,7 +57,7 @@ L'interfaccia è pensata anche per lo smartphone (barra di navigazione in basso,
 | Modo | Per chi | Come |
 |---|---|---|
 | **Rete Wi-Fi di casa** | Android e iPhone, con un computer acceso | Avvia con `npm run lan`, apri "Usa sul telefono" sul computer e inquadra il QR code col telefono |
-| **Tutto sul telefono** | Solo Android | Termux (da F-Droid): `pkg install nodejs-lts git python`, poi `git clone` del repository e `npm start`; apri `http://127.0.0.1:8080` in Chrome |
+| **Tutto sul telefono** | Solo Android 7+ | Termux (APK da github.com/termux/termux-app/releases o f-droid.org, non dal Play Store): `pkg install nodejs-lts git python`, poi `git clone` del repository e `npm start`; apri `http://127.0.0.1:8080` in Chrome |
 | **Server online HTTPS** | Ovunque, anche iPhone fuori casa | VPS con Docker: imposta `DOMAIN` e `APP_SECRET` in `.env`, poi `docker compose up -d` (Caddy ottiene il certificato HTTPS automaticamente) |
 
 Installazione dell'app: su iPhone Safari → Condividi → "Aggiungi alla schermata Home"; su Android Chrome → ⋮ → "Installa app".
